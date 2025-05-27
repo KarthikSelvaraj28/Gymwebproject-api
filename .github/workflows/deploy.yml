@@ -1,45 +1,38 @@
-name: Deploy .NET API to EC2
+name: Deploy .NET to Elastic Beanstalk
 
 on:
   push:
-    branches: [main]
+    branches:
+      - master 
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '7.0.x'  # or 6.0.x, based on your project
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x' 
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Publish .NET App
+        run: dotnet publish -c Release -o publish
 
-    - name: Build .NET Project
-      run: dotnet build --configuration Release
+      - name: Zip Publish Folder
+        run: |
+          cd publish
+          zip -r ../app.zip .
 
-    - name: Publish .NET API
-      run: dotnet publish -c Release -o ./publish
-
-    - name: Deploy to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_KEY }}
-        source: "./publish/*"
-        target: "/var/www/dotnetapp"
-
-    - name: Restart .NET App on EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_KEY }}
-        script: |
-          sudo systemctl restart kestrel-dotnetapp.service
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: My.NetGymproj
+          environment_name: MyNetGymproj-env
+          version_label: v-${{ github.run_number }}
+          region: 	ap-south-1
+          deployment_package: app.zip
