@@ -52,7 +52,7 @@ namespace Gymwebproject.Controllers
 
 
 
-        // ✅ POST: Add Item to Cart (Ensure Unique Entry per User & Product)
+        // ✅ POST: Add Item to Cart (Ensure Unique Entry per User & Products)
         [HttpPost("Add")]
         public async Task<ActionResult<Cart>> AddToCart([FromBody] Cart cartItem)
         {
